@@ -1,9 +1,5 @@
 # f5-nagios-bigip-license-monitor
 Nagios plugin to monitor time remaining on a BIG-IP evaluation license
-
-After forgetting yet again to re-license my lab before the license expired, I decided to bite the bullet and get Nagios set up so that I could poll the license expiry time via SNMP. Then, I found out that we don't have an OID for the LicenseEndDate attribute. Fun times.
- 
-So, instead I hacked together this this plugin as a bash script to pull the end date using cURL and jq, and alert accordingly. By default it changes the service state to WARNING when the license is 7 days away from expiry, and CRITICAL at 3 days. Put the .sh file in your Nagios plugins folder (/usr/local/nagios/libexec by default), and configure command and service definitions similar to the following:
  
 ## Command definition:
 
