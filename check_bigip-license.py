@@ -26,4 +26,4 @@ license = getLicense(bigip)
 subs = checkSubs(license, args['warn_threshold'], args['crit_threshold'])
 base = checkBase(license, args['warn_threshold'], args['crit_threshold'])
 
-return max(subs, base)
+sys.exit(max(subs, base))
