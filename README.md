@@ -1,5 +1,5 @@
 # f5-nagios-bigip-license-monitor
-Nagios plugin to monitor time remaining on a BIG-IP evaluation license
+Nagios plugin to monitor time remaining for time-limited licenses (e.g.: subscriptions, evaluations)
  
 ## Command definition:
 
