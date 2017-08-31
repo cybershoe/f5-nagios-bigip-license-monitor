@@ -1,5 +1,34 @@
 #!/usr/bin/env python
 
+'''
+
+Nagios plugin to monitor time remaining for time-limited BIG-IP license.
+
+Requires at least hostname, username, and password.
+
+Example command definition in Nagios:
+
+# 'check_bigip-license' command definition
+define command{
+        command_name    check_bigip-license
+        command_line    $USER1$/check_bigip-license.py -H $HOSTADDRESS$ $ARG1$
+        }
+
+Example service definition in Nagios:
+
+# Monitor license expiry via iControl
+define service{
+        use                     generic-service ; Inherit values from a template
+        hostgroup_name          bigip-hostgroup
+        service_description     license
+        check_command           check_bigip-license!-u service_account -p "password_here"
+        normal_check_interval   1440
+        notification_interval   1440
+        retry_check_interval    60
+        }
+
+'''
+
 DEFAULT_CRIT_THRESHOLD = 3
 DEFAULT_WARN_THRESHOLD = 7
 
@@ -11,6 +40,8 @@ from datetime import date, datetime
 from f5.bigip import ManagementRoot
 from f5.sdk_exception import LazyAttributesRequired
 from urllib3 import disable_warnings
+
+_verr = False
 
 def scrub(args):
     printable = set(string.printable)
@@ -67,6 +98,8 @@ def parse():
       default=False)
 
     args = vars(parser.parse_args())
+    global _verr
+    _verr = args['verbose']
 
     # Scrub inputs for non-printable characters
     scrub(args)
@@ -79,7 +112,7 @@ def connectBigIP(host, user, passwd, loginref):
         return mgmt
     except Exception as e:
         sys.stderr.write('Unable to connect to {0}\n'.format(host))
-        if args['verbose']:
+        if _verr:
             sys.stderr.write(str(e))
         sys.exit(3)
 
@@ -89,7 +122,7 @@ def getLicense(bigip):
         return license
     except Exception as e:
         sys.stderr.write('Unable to retrieve license activation information\n')
-        if args['verbose']:
+        if _verr:
             sys.stderr.write(str(e))
         sys.exit(3)
 
@@ -136,4 +169,4 @@ license = getLicense(bigip)
 subs = checkSubs(license, args['warn_threshold'], args['crit_threshold'])
 base = checkBase(license, args['warn_threshold'], args['crit_threshold'])
 
-sys.exit(max(subs, base))
+sys.exit(max(subs, base, 0))
