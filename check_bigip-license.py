@@ -134,7 +134,10 @@ def checkSubs(license, warn, crit):
             modName = m['moduleName'].split('|')[0]
             exDate = datetime(int(exDateStr[0:4]), int(exDateStr[4:6]), int(exDateStr[6:8]))
             remaining = exDate - datetime.today()
-            print('{0} expires in {1} days, {2} hours.'.format(modName, remaining.days + 1, remaining.seconds // 3600))
+            if remaining > 0:
+                print('{0} expires in {1} days, {2} hours.'.format(modName, remaining.days + 1, remaining.seconds // 3600))
+            else:
+                print('{0} expired {1} days, {2} hours ago.'.format(modName, remaining.days.abs() + 1, remaining.seconds.abs() // 3600))
             if remaining.days + 1 < crit:
                 code.append(2)
             elif remaining.days + 1 < warn:
