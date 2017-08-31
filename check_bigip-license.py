@@ -17,11 +17,11 @@ def scrub(args):
     for a in [x for x in args if isinstance(args[x], str)]:
         for c in args[a]:
             if not c in printable:
-                sys.stderr.write('Unprintable character in ' + a)
+                sys.stderr.write('Unprintable character in {0}\n'.format(a))
                 sys.exit(3)
 
 def parse():
-    parser = argparse.ArgumentParser(description='Check BIG-IP License Expiry')
+    parser = argparse.ArgumentParser(description='Nagios plugin to monitor time remaining for time-limited BIG-IP licenses')
 
     parser.add_argument('-H', '--host',
       required=True,
@@ -73,12 +73,12 @@ def parse():
 
     return args
 
-def connectBigIP(h, u, p, l):
+def connectBigIP(host, user, passwd, loginref):
     try:
-        mgmt = ManagementRoot(h, u, p, token=l)
+        mgmt = ManagementRoot(host, user, passwd, token=loginref)
         return mgmt
     except Exception as e:
-        sys.stderr.write('Unable to connect to ' + h + '\n')
+        sys.stderr.write('Unable to connect to {0}\n'.format(host))
         if args['verbose']:
             sys.stderr.write(str(e))
         sys.exit(3)
