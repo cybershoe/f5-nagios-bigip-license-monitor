@@ -1,6 +1,20 @@
 # f5-nagios-bigip-license-monitor
 Nagios plugin to monitor time remaining for time-limited licenses (e.g.: subscriptions, evaluations)
- 
+
+## Prerequisites
+
+- f5-sdk
+- pytz
+
+You can install these with the following command:
+
+```
+$ pip install f5-sdk pytz
+```
+
+Note: Certain versions of the F5 SDK don't properly install their dependencies.
+If you receive a dependency error, try `$ pip install f5-icontrol-rest six`
+
 ## Command definition:
 
 ```
@@ -14,7 +28,7 @@ define command{
 ## Service definition:
 ```
 # Monitor license expiry via iControl
- 
+
 define service{
         use                     generic-service ; Inherit values from a template
         hostgroup_name          bigip-hostgroup
@@ -24,8 +38,8 @@ define service{
         notification_interval   1440
         retry_check_interval    60
         }
-``` 
- 
+```
+
 ## Script usage:
 ```
 usage: check_bigip-license.py [-h] -H <hostname> -u <username> -p <password
