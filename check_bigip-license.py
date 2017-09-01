@@ -32,15 +32,18 @@ define service{
 DEFAULT_CRIT_THRESHOLD = 3
 DEFAULT_WARN_THRESHOLD = 7
 
-import argparse
-import string
-import sys
-
-from datetime import date, datetime, timedelta
-from f5.bigip import ManagementRoot
-from f5.sdk_exception import LazyAttributesRequired
-from pytz import timezone
-from urllib3 import disable_warnings
+try:
+    import argparse
+    import string
+    import sys
+    from datetime import date, datetime, timedelta
+    from f5.bigip import ManagementRoot
+    from f5.sdk_exception import LazyAttributesRequired
+    from pytz import timezone
+    from urllib3 import disable_warnings
+except Exception as e:
+    sys.stderr.write(str(e))
+    sys.exit(3)
 
 _verr = False
 
@@ -166,19 +169,27 @@ def checkBase(license, tz, warn, crit):
         print('Base license is perpetual')
         return 0
 
-args = parse()
+def main():
+    args = parse()
 
-if args['insecure']:
-    disable_warnings()
+    if args['insecure']:
+        disable_warnings()
 
-bigip = connectBigIP(args['hostname'], args['username'], args['password'], args['loginref'])
+    bigip = connectBigIP(args['hostname'], args['username'], args['password'], args['loginref'])
 
-devs = bigip.tm.cm.devices.get_collection()
-tz = [x for x in devs if x.selfDevice == 'true'][0].timeZone
+    devs = bigip.tm.cm.devices.get_collection()
+    tz = [x for x in devs if x.selfDevice == 'true'][0].timeZone
 
-license = getLicense(bigip)
+    license = getLicense(bigip)
 
-subs = checkSubs(license, tz, args['warn_threshold'], args['crit_threshold'])
-base = checkBase(license, tz, args['warn_threshold'], args['crit_threshold'])
+    subs = checkSubs(license, tz, args['warn_threshold'], args['crit_threshold'])
+    base = checkBase(license, tz, args['warn_threshold'], args['crit_threshold'])
 
-sys.exit(max(subs, base, 0))
+    sys.exit(max(subs, base, 0))
+
+
+try:
+    main()
+except Exception as e:
+    sys.stderr.write(str(e))
+    sys.exit(3)
