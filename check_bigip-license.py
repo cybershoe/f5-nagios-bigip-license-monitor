@@ -36,9 +36,10 @@ import argparse
 import string
 import sys
 
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from f5.bigip import ManagementRoot
 from f5.sdk_exception import LazyAttributesRequired
+from pytz import timezone
 from urllib3 import disable_warnings
 
 _verr = False
@@ -126,30 +127,38 @@ def getLicense(bigip):
             sys.stderr.write(str(e))
         sys.exit(3)
 
-def checkSubs(license, warn, crit):
+def checkSubs(license, tz, warn, crit):
     try:
         for m in [x for x in license.moduleEvaluations]:
             code = [0]
             exDateStr = m['moduleName'].split('|')[3]
             modName = m['moduleName'].split('|')[0]
-            exDate = datetime(int(exDateStr[0:4]), int(exDateStr[4:6]), int(exDateStr[6:8]))
-            remaining = exDate - datetime.today()
-            print('{0} expires in {1} days, {2} hours.'.format(modName, remaining.days + 1, remaining.seconds // 3600))
-            if remaining.days + 1 < crit:
+            exTime = timezone(tz).localize(datetime(int(exDateStr[0:4]), int(exDateStr[4:6]), int(exDateStr[6:8])))
+            remaining = exTime + timedelta(days=1) - datetime.today().astimezone(timezone('utc')) # License expires at end of day local time
+            if remaining.seconds > 0:
+                print('{0} expires in {1} days, {2} hours.'.format(modName, remaining.days, remaining.seconds // 3600))
+            else:
+                print('{0} has expired.'.format(modName))
+            if remaining.days < crit:
                 code.append(2)
-            elif remaining.days + 1 < warn:
+            elif remaining.days < warn:
                 code.append(1)
         return max(code)
     except LazyAttributesRequired:
         print('No time-limited modules')
         return 0
 
-def checkBase(license, warn, crit):
+def checkBase(license, tz, warn, crit):
     try:
-        print(license.expiresInDaysMessage)
-        if float(license.expiresInDays) <= args['crit_threshold']:
+        exTime = timezone(tz).localize(datetime(*map(int, license.licenseEndDateTime.split('T')[0].split('-'))))
+        remaining = exTime + timedelta(days=1) - datetime.today().astimezone(timezone('utc')) # License expires at end of day local time
+        if remaining.seconds > 0:
+            print('Base license expires in {0} days, {1} hours.'.format(remaining.days, remaining.seconds // 3600))
+        else:
+            print('Base license has expired.')
+        if remaining.days < crit:
             return 2
-        elif float(license.expiresInDays) <= args['warn_threshold']:
+        elif remaining.days < warn:
             return 1
         else:
             return 0
@@ -164,9 +173,13 @@ if args['insecure']:
 
 bigip = connectBigIP(args['hostname'], args['username'], args['password'], args['loginref'])
 
+devs = bigip.tm.cm.devices.get_collection()
+tz = [x for x in devs if x.selfDevice == 'true'][0].timeZone
+devTime = datetime.today().astimezone(timezone(tz))
+
 license = getLicense(bigip)
 
-subs = checkSubs(license, args['warn_threshold'], args['crit_threshold'])
-base = checkBase(license, args['warn_threshold'], args['crit_threshold'])
+subs = checkSubs(license, tz, args['warn_threshold'], args['crit_threshold'])
+base = checkBase(license, tz, args['warn_threshold'], args['crit_threshold'])
 
 sys.exit(max(subs, base, 0))
