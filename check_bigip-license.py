@@ -134,7 +134,7 @@ def checkSubs(license, tz, warn, crit):
             exDateStr = m['moduleName'].split('|')[3]
             modName = m['moduleName'].split('|')[0]
             exTime = timezone(tz).localize(datetime(int(exDateStr[0:4]), int(exDateStr[4:6]), int(exDateStr[6:8])))
-            remaining = exTime + timedelta(days=1) - datetime.today().astimezone(timezone('utc')) # License expires at end of day local time
+            remaining = exTime + timedelta(days=1) - datetime.now(timezone('utc')) # License expires at end of day local time
             if remaining.seconds > 0:
                 print('{0} expires in {1} days, {2} hours.'.format(modName, remaining.days, remaining.seconds // 3600))
             else:
@@ -151,7 +151,7 @@ def checkSubs(license, tz, warn, crit):
 def checkBase(license, tz, warn, crit):
     try:
         exTime = timezone(tz).localize(datetime(*map(int, license.licenseEndDateTime.split('T')[0].split('-'))))
-        remaining = exTime + timedelta(days=1) - datetime.today().astimezone(timezone('utc')) # License expires at end of day local time
+        remaining = exTime + timedelta(days=1) - datetime.now(timezone('utc')) # License expires at end of day local time
         if remaining.seconds > 0:
             print('Base license expires in {0} days, {1} hours.'.format(remaining.days, remaining.seconds // 3600))
         else:
