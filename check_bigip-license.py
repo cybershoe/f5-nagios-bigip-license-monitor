@@ -175,7 +175,6 @@ bigip = connectBigIP(args['hostname'], args['username'], args['password'], args[
 
 devs = bigip.tm.cm.devices.get_collection()
 tz = [x for x in devs if x.selfDevice == 'true'][0].timeZone
-devTime = datetime.today().astimezone(timezone(tz))
 
 license = getLicense(bigip)
 
