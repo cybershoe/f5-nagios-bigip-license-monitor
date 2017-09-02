@@ -36,6 +36,7 @@ try:
     import argparse
     import string
     import sys
+    import traceback
     from datetime import date, datetime, timedelta
     from f5.bigip import ManagementRoot
     from f5.sdk_exception import LazyAttributesRequired
@@ -132,42 +133,47 @@ def getLicense(bigip):
 
 def checkSubs(license, tz, warn, crit):
     try:
+        result = []
         for m in [x for x in license.moduleEvaluations]:
-            code = [0]
             exDateStr = m['moduleName'].split('|')[3]
             modName = m['moduleName'].split('|')[0]
             exTime = timezone(tz).localize(datetime(int(exDateStr[0:4]), int(exDateStr[4:6]), int(exDateStr[6:8])))
             remaining = exTime + timedelta(days=1) - datetime.now(timezone('utc')) # License expires at end of day local time
             if remaining.seconds > 0:
-                print('{0} expires in {1} days, {2} hours.'.format(modName, remaining.days, remaining.seconds // 3600))
+                msg = '{0} expires in {1} days, {2} hours.'.format(modName, remaining.days, remaining.seconds // 3600)
             else:
-                print('{0} has expired.'.format(modName))
+                msg = '{0} has expired.'.format(modName)
             if remaining.days < crit:
-                code.append(2)
+                code = 2
             elif remaining.days < warn:
-                code.append(1)
-        return max(code)
+                code = 1
+            else:
+                code = 0
+            result.append((code, remaining, msg))
+        return result
     except LazyAttributesRequired:
         print('No time-limited modules')
-        return 0
+        return [(0, timedelta.max, 'No time-limited modules')]
 
 def checkBase(license, tz, warn, crit):
     try:
+        global results
         exTime = timezone(tz).localize(datetime(*map(int, license.licenseEndDateTime.split('T')[0].split('-'))))
         remaining = exTime + timedelta(days=1) - datetime.now(timezone('utc')) # License expires at end of day local time
         if remaining.seconds > 0:
-            print('Base license expires in {0} days, {1} hours.'.format(remaining.days, remaining.seconds // 3600))
+            msg = 'Base license expires in {0} days, {1} hours.'.format(remaining.days, remaining.seconds // 3600)
         else:
-            print('Base license has expired.')
+            msg('Base license has expired.')
         if remaining.days < crit:
-            return 2
+            code = 2
         elif remaining.days < warn:
-            return 1
+            code = 1
         else:
-            return 0
+            code =  0
+        return (code, remaining - timedelta(seconds=1), msg)
     except LazyAttributesRequired:
-        print('Base license is perpetual')
-        return 0
+        print('Base license is perpetual.')
+        return (0, timedelta.max - timedelta(seconds=1), 'Base license is perpetual.')
 
 def main():
     args = parse()
@@ -182,14 +188,19 @@ def main():
 
     license = getLicense(bigip)
 
-    subs = checkSubs(license, tz, args['warn_threshold'], args['crit_threshold'])
-    base = checkBase(license, tz, args['warn_threshold'], args['crit_threshold'])
+    results = []
 
-    sys.exit(max(subs, base, 0))
+    results.extend(checkSubs(license, tz, args['warn_threshold'], args['crit_threshold']))
+    results.append(checkBase(license, tz, args['warn_threshold'], args['crit_threshold']))
+
+    results.sort(key=lambda x: x[1])
+    for line in results:
+        print(line[2])
+    sys.exit(max(results)[0])
 
 
 try:
     main()
 except Exception as e:
-    sys.stderr.write(str(e))
+    traceback.print_exc()
     sys.exit(3)
