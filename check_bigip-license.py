@@ -43,7 +43,7 @@ try:
     from pytz import timezone
     from urllib3 import disable_warnings
 except Exception as e:
-    sys.stderr.write(str(e))
+    traceback.print_exc()
     sys.exit(3)
 
 _verr = False
