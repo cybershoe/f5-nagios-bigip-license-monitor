@@ -152,7 +152,6 @@ def checkSubs(license, tz, warn, crit):
             result.append((code, remaining, msg))
         return result
     except LazyAttributesRequired:
-        print('No time-limited modules')
         return [(0, timedelta.max, 'No time-limited modules')]
 
 def checkBase(license, tz, warn, crit):
