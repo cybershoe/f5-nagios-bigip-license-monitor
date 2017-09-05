@@ -171,7 +171,6 @@ def checkBase(license, tz, warn, crit):
             code =  0
         return (code, remaining - timedelta(seconds=1), msg)
     except LazyAttributesRequired:
-        print('Base license is perpetual.')
         return (0, timedelta.max - timedelta(seconds=1), 'Base license is perpetual.')
 
 def main():
