@@ -1,20 +1,34 @@
 # f5-nagios-bigip-license-monitor
-Nagios plugin to monitor time remaining on a BIG-IP evaluation license
- 
+Nagios plugin to monitor time remaining for time-limited licenses (e.g.: subscriptions, evaluations)
+
+## Prerequisites
+
+- f5-sdk
+- pytz
+
+You can install these with the following command:
+
+```
+$ pip install f5-sdk pytz
+```
+
+Note: Certain versions of the F5 SDK don't properly install their dependencies.
+If you receive a dependency error, try `$ pip install f5-icontrol-rest six`
+
 ## Command definition:
 
 ```
 # 'check_bigip-license' command definition
 define command{
         command_name    check_bigip-license
-        command_line    $USER1$/check_bigip-license.sh -H $HOSTADDRESS$ $ARG1$
+        command_line    $USER1$/check_bigip-license.py -H $HOSTADDRESS$ $ARG1$
         }
 ```
 
 ## Service definition:
 ```
 # Monitor license expiry via iControl
- 
+
 define service{
         use                     generic-service ; Inherit values from a template
         hostgroup_name          bigip-hostgroup
@@ -24,30 +38,32 @@ define service{
         notification_interval   1440
         retry_check_interval    60
         }
-``` 
- 
+```
+
 ## Script usage:
 ```
-Usage:
- 
-check_bigip-license.sh <options>
- 
-Options:
- 
--H <host>
-Mandatory. Specifies the hostname or IP address to check.
- 
--u <usermame>
-Mandatory. Specifies the iControl user account username.
- 
--p <password>
-Mandatory. Specifies the iControl user account password.
- 
--w <warn_threshold>
-Optional. Specifies the warning threshold in days. If not specified, the
-value of DEFAULT_WARN_THRESHOLD is used instead.
- 
--c <crit_threshold>
-Optional. Specifies the critical threshold in days. If not specified, the
-value of DEFAULT_CRIT_THRESHOLD is used instead.
+usage: check_bigip-license.py [-h] -H <hostname> -u <username> -p <password
+                              [-l <loginref>] [-w <warn_threshold>]
+                              [-c <crit_threshold>] [-i] [-v]
+
+Check BIG-IP License Expiry
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -H <hostname>, --host <hostname>
+                        Mandatory. Specifies the hostname or IP to check.
+  -u <username>, --username <username>
+                        Mandatory. Specifies the iControl user account
+                        username.
+  -p <password>, --password <password>
+                        Mandatory. Specifies the iControl user account
+                        password.
+  -l <loginref>, --loginref <loginref>
+                        Optional. Overrides the iControlREST loginReference
+  -w <warn_threshold>, --warn-threshold <warn_threshold>
+                        Optional. Specifies the warning threshold in days.
+  -c <crit_threshold>, --crit-threshold <crit_threshold>
+                        Optional. Specifies the critical threshold in days.
+  -i, --insecure        Optional. Suppress SSL warnings
+  -v, --verbose         Optional. Verbose error messages.
 ```
